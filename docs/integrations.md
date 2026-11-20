@@ -62,6 +62,64 @@ report-share secrets, recipient logs or account relations. A campaign outside
 the key's workspace returns 404. Invalid/expired/revoked keys return 401, missing
 scope returns 403, rate limits return 429. Results are `Cache-Control: no-store`.
 
+## Instagram insights (`insights:read`)
+
+Create a separate key with **Key access: Instagram insights (read-only)**. A
+`campaigns:read` key cannot read insights and an `insights:read` key cannot read
+campaigns; both return 403. Insights are REST only; there is no MCP tool.
+
+```text
+GET /api/v1/insights
+GET /api/v1/insights?since=2026-11-14&until=2026-11-20
+GET /api/v1/insights?since=2026-11-14&until=2026-11-20&instagramAccountId=<account-id>
+```
+
+- `since` / `until`: inclusive UTC calendar days (`YYYY-MM-DD`). Default: the
+  last 30 days ending today. At most 366 days. Unknown parameters return 400.
+- The range selects posts by **publish date**. It is not a reporting period for
+  the metrics themselves.
+- `instagramAccountId`: an OpenReply account ID from the same workspace.
+  Omitted, the most recently connected account is used. Foreign IDs return 404.
+
+The response (`{ "data": ... }`) separates two kinds of values:
+
+| Field | Meaning |
+| --- | --- |
+| `capturedAt` | When the values were read. Use it as the snapshot time. |
+| `daily.followers.current` | Follower total right now, or `null` with `status: "unavailable"`. |
+| `daily.followerHistory[]` | Stored daily follower snapshots in the range: `date`, `followers`, `delta`. Days without a snapshot are absent; `delta` is `null` when the previous day is missing. |
+| `posts.metricType` | Always `lifetime_cumulative`: post metrics are totals since publishing, as of `posts.asOf`. |
+| `posts.items[]` | `id`, `publishedAt`, `mediaType`, `productType`, `permalink`, `insightsStatus` and `metrics` (`reach`, `views`, `likes`, `comments`, `saved`, `shares`). |
+| `posts.truncated` | `true` when the window may hold more posts than returned. Narrow the range. |
+
+Missing values are `null`, never `0`. Each post lists the reason in `missing`:
+`not_requested_for_media_type` (views on photos and albums),
+`insights_permission_denied`, `insights_unavailable` or
+`not_returned_by_instagram` (for example a hidden like count). `insightsStatus`
+is `ok`, `permission_denied` or `unavailable` per post; one failed post never
+fails the whole response.
+
+Limits: the newest 200 media items are scanned and at most 100 posts in the
+range get insight requests. Each call makes one Instagram request per post, so
+call it on a schedule (for example once a week), not in a loop. Errors from
+Instagram are returned without Meta's message: 502 for an expired token,
+denied access or other failures, 503 for Instagram rate limits.
+
+The endpoint is read-only. It does not write follower snapshots, refresh
+tokens, send messages or touch campaigns. Follower history only contains days
+that were already snapshotted, by the daily `snapshot-followers` cron or by
+opening Overview. Hosts without Vercel crons need their own scheduler for that
+cron (see [deploy-dokploy.md](deploy-dokploy.md)) to get one point per day.
+
+### Weekly snapshots
+
+Store each response as-is (or one CSV row per post with `capturedAt`). Weekly
+change for a post is the difference between two snapshots of its lifetime
+metrics, matched by `id`. Only subtract when both values are numbers; a `null`
+on either side means unknown, not zero. Use `daily.followerHistory` for
+follower change between two dates instead of subtracting `daily.followers.current`
+values taken at different times.
+
 Admin key management uses session authentication at `/api/integrations/keys`:
 GET lists metadata (never hashes/tokens), POST creates a key, DELETE with `?id=`
 revokes it. A supplied Origin must match `NEXTAUTH_URL` (or the request origin).

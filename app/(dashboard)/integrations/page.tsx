@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
+import { SERVICE_SCOPES } from "@/lib/integrations/scopes";
 
-type Key = { id: string; name: string; expiresAt: string; revokedAt: string | null };
+type Scope = typeof SERVICE_SCOPES[number];
+type Key = { id: string; name: string; scopes: string[]; expiresAt: string; revokedAt: string | null };
 
 export default function IntegrationsPage() {
   const { t, locale } = useI18n();
   const [keys, setKeys] = useState<Key[]>([]);
   const [name, setName] = useState("");
   const [days, setDays] = useState(30);
+  const [scope, setScope] = useState<Scope>("campaigns:read");
   const [token, setToken] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,12 +27,15 @@ export default function IntegrationsPage() {
   useEffect(() => { void Promise.resolve().then(load).catch(e => setNotice(e.message)); }, []);
 
   async function create() {
-    if (!window.confirm(t("Create a read-only workspace key for {days} days? Anyone with this key can read your campaigns.", { days }))) return;
+    const question = scope === "insights:read"
+      ? t("Create a read-only Instagram insights key for {days} days? Anyone with this key can read your post metrics and follower counts.", { days })
+      : t("Create a read-only workspace key for {days} days? Anyone with this key can read your campaigns.", { days });
+    if (!window.confirm(question)) return;
     setBusy(true); setToken(""); setNotice("");
     try {
       const response = await fetch("/api/integrations/keys", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, days, scopes: ["campaigns:read"] }),
+        body: JSON.stringify({ name, days, scopes: [scope] }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -57,6 +63,10 @@ export default function IntegrationsPage() {
     {notice && <p role="status">{notice}</p>}
     <section className="space-y-3 rounded border border-border p-4">
       <label className="block">{t("Key name")}<input maxLength={100} disabled={busy} className="w-full rounded border border-border p-2" value={name} onChange={e => setName(e.target.value)} /></label>
+      <label className="block">{t("Key access")}<select disabled={busy} value={scope} onChange={e => setScope(e.target.value as Scope)} className="ml-3 rounded border border-border p-2">
+        <option value="campaigns:read">{t("Campaigns (read-only)")}</option>
+        <option value="insights:read">{t("Instagram insights (read-only)")}</option>
+      </select></label>
       <label className="block">{t("Key lifetime")}<select disabled={busy} value={days} onChange={e => setDays(Number(e.target.value))} className="ml-3 rounded border border-border p-2">
         {[30, 60, 90].map(value => <option key={value} value={value}>{t("{days} days", { days: value })}</option>)}
       </select></label>
@@ -71,12 +81,12 @@ export default function IntegrationsPage() {
     </section>
     <section className="space-y-3">{keys.map(key => <div key={key.id} className="rounded border border-border p-4">
       <strong>{key.name}</strong>
-      <p className="text-sm">campaigns:read · {t("Expires: {date}", { date: new Date(key.expiresAt).toLocaleDateString(locale) })}</p>
+      <p className="text-sm">{(key.scopes ?? []).join(", ")} · {t("Expires: {date}", { date: new Date(key.expiresAt).toLocaleDateString(locale) })}</p>
       {key.revokedAt ? <span>{t("Revoked")}</span> : <button disabled={busy} onClick={() => revoke(key)} className="text-red-500">{t("Revoke key")}</button>}
     </div>)}</section>
     <section className="space-y-2 text-sm">
       <h2 className="font-semibold">{t("Connection")}</h2>
-      <p>MCP: <code>/api/mcp</code> · REST: <code>/api/v1/campaigns</code></p>
+      <p>MCP: <code>/api/mcp</code> · REST: <code>/api/v1/campaigns</code>, <code>/api/v1/insights</code></p>
       <p>{t("Streamable HTTP with an Authorization: Bearer header. This server does not provide OAuth; use a client that supports custom headers.")}</p>
       <p>{t("Campaign lists are limited to 100. Use get_campaign for complete settings and destination links; clicks are raw requests, not unique recipients.")}</p>
     </section>

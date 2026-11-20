@@ -468,5 +468,9 @@
   "{name} Campaign Report": "Отчёт по кампании «{name}»",
   "{type} post": "Пост {type}",
   "”": "»",
-  "← Campaigns": "← Кампании"
+  "← Campaigns": "← Кампании",
+  "Key access": "Доступ ключа",
+  "Campaigns (read-only)": "Кампании (только чтение)",
+  "Instagram insights (read-only)": "Статистика Instagram (только чтение)",
+  "Create a read-only Instagram insights key for {days} days? Anyone with this key can read your post metrics and follower counts.": "Создать ключ статистики Instagram только для чтения на {days} дн.? Любой, у кого есть этот ключ, сможет читать метрики ваших публикаций и число подписчиков."
 }

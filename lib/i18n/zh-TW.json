@@ -468,5 +468,9 @@
   "{name} Campaign Report": "{name} 活動報表",
   "{type} post": "{type} 貼文",
   "”": "」",
-  "← Campaigns": "← 返回活動列表"
+  "← Campaigns": "← 返回活動列表",
+  "Key access": "金鑰權限",
+  "Campaigns (read-only)": "行銷活動（唯讀）",
+  "Instagram insights (read-only)": "Instagram 洞察報告（唯讀）",
+  "Create a read-only Instagram insights key for {days} days? Anyone with this key can read your post metrics and follower counts.": "建立有效期為 {days} 天的 Instagram 洞察報告唯讀金鑰？持有此金鑰的人都能讀取您的貼文成效與粉絲人數。"
 }

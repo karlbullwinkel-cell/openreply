@@ -468,5 +468,9 @@
   "{name} Campaign Report": "Relatório da campanha {name}",
   "{type} post": "Publicação {type}",
   "”": "”",
-  "← Campaigns": "← Campanhas"
+  "← Campaigns": "← Campanhas",
+  "Key access": "Acesso da chave",
+  "Campaigns (read-only)": "Campanhas (somente leitura)",
+  "Instagram insights (read-only)": "Insights do Instagram (somente leitura)",
+  "Create a read-only Instagram insights key for {days} days? Anyone with this key can read your post metrics and follower counts.": "Criar uma chave somente leitura de insights do Instagram por {days} dias? Qualquer pessoa com esta chave poderá ler as métricas das suas publicações e o número de seguidores."
 }

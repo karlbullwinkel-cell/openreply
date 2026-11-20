@@ -94,6 +94,11 @@ describe("key management", () => {
     expect((await createKey(request({}))).status).toBe(403);
     expect((await revokeKey(new Request("https://example.test/api/integrations/keys?id=key"))).status).toBe(403);
   });
+  it("creates a separate read-only insights key", async () => {
+    expect((await createKey(request({ name: "Weekly export", scopes: ["insights:read"], days: 90 }))).status).toBe(201);
+    expect(state.keys.create.mock.calls[0][0].data.scopes).toEqual(["insights:read"]);
+    expect((await createKey(request({ name: "Both", scopes: ["campaigns:read", "insights:read"] }))).status).toBe(400);
+  });
   it("rejects write scopes and foreign Origins", async () => {
     expect((await createKey(request({ name: "Reader", scopes: ["drafts:write"] }))).status).toBe(400);
     expect((await createKey(request({}, { origin: "https://evil.test" }))).status).toBe(403);
